@@ -2,7 +2,23 @@
   "permissions": {
     "allow": [
       "Bash(npm -v)",
-      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --eslint --src-dir --import-alias \"@/*\" --use-npm --no-turbopack)"
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --eslint --src-dir --import-alias \"@/*\" --use-npm --no-turbopack)",
+      "Bash(node -e \"console.log\\(require.resolve\\('sharp'\\)\\)\")",
+      "Bash(node scripts/generate-icons.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -o /dev/null -w \"icon-192: %{http_code}\\\\n\" http://localhost:4311/icons/icon-192.png)",
+      "Bash(curl -s -o /dev/null -w \"sw.js: %{http_code}\\\\n\" http://localhost:4311/sw.js)",
+      "Bash(curl -s -o /dev/null -w \"apple-touch-icon: %{http_code}\\\\n\" http://localhost:4311/icons/apple-touch-icon.png)",
+      "Bash(curl -s -o /dev/null -w \"icon.svg: %{http_code}\\\\n\" http://localhost:4311/icon.svg)",
+      "Bash(npx --yes chromium-cli --help)",
+      "Bash(npm ls *)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(npx playwright *)",
+      "Bash(node scripts/screenshot.mjs)",
+      "Bash(node scripts/screenshot-flow.mjs)",
+      "Bash(rm -f scratch-screenshot.png scratch-screenshot-sheet.png scripts/screenshot.mjs scripts/screenshot-flow.mjs)",
+      "Bash(npm uninstall *)",
+      "Bash(powershell -NoProfile -Command \"Stop-Process -Id 25804 -Force\")"
     ]
   }
 }
