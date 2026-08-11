@@ -23,6 +23,20 @@ model Gasto {
   categoria    String
   esRecurrente Boolean  @default(false)
   registradoEn DateTime @default(now())
+  desglose     GastoCategoria[]
 
   @@index([fecha])
+}
+
+// Cuando un recibo mezcla categorías (ej. comida + aseo en la misma factura), el
+// gasto guarda su categoria/monto de siempre (el rubro principal) más estas filas
+// con el detalle. Vacío cuando el usuario no divide el gasto.
+model GastoCategoria {
+  id        Int    @id @default(autoincrement())
+  gastoId   Int
+  gasto     Gasto  @relation(fields: [gastoId], references: [id], onDelete: Cascade)
+  categoria String
+  monto     Float
+
+  @@index([gastoId])
 }

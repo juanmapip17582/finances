@@ -10,23 +10,23 @@ export default function Home() {
       <div className="bg-vignette" />
 
       <header className="relative z-10 flex items-center justify-between pt-[max(1.75rem,env(safe-area-inset-top))]">
-        <p className="font-display text-lg italic tracking-tight text-paper">
+        <p className="font-display text-3xl italic tracking-tight text-paper">
           gasto<span className="text-accent">.</span>
         </p>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <Link
             href="/resumen"
             aria-label="Ver resumen"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-paper-dim transition-colors hover:text-paper"
+            className="flex h-12 w-12 items-center justify-center rounded-full text-paper-dim transition-colors hover:text-paper"
           >
-            <ChartGlyph className="h-5 w-5" />
+            <ChartGlyph className="h-7 w-7" />
           </Link>
           <Link
             href="/historial"
             aria-label="Ver historial"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-paper-dim transition-colors hover:text-paper"
+            className="flex h-12 w-12 items-center justify-center rounded-full text-paper-dim transition-colors hover:text-paper"
           >
-            <HistoryGlyph className="h-5 w-5" />
+            <HistoryGlyph className="h-7 w-7" />
           </Link>
         </div>
       </header>

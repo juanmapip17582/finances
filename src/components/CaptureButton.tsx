@@ -8,6 +8,7 @@ import { compressImageToJpeg } from "@/lib/image";
 import {
   guardarGasto,
   GastoDuplicadoError,
+  desgloseValido,
   type Gasto,
   type NuevoGasto,
   type DraftGasto,
@@ -21,7 +22,14 @@ function today() {
 }
 
 function emptyDraft(): DraftGasto {
-  return { comercio: "", monto: "", fecha: today(), categoria: "otros", esRecurrente: false };
+  return {
+    comercio: "",
+    monto: "",
+    fecha: today(),
+    categoria: "otros",
+    esRecurrente: false,
+    desglose: null,
+  };
 }
 
 function formatearMonto(monto: number): string {
@@ -77,6 +85,7 @@ export default function CaptureButton() {
           fecha: data.receipt.fecha ?? today(),
           categoria: (data.receipt.categoria as Categoria) ?? "otros",
           esRecurrente: false,
+          desglose: null,
         });
       } else {
         setErrorMessage(data.error ?? "No se pudo analizar el recibo.");
@@ -99,6 +108,10 @@ export default function CaptureButton() {
       setErrorMessage("Revisá el comercio y el monto antes de guardar.");
       return;
     }
+    if (draft.desglose && !desgloseValido(draft.desglose, draft.monto)) {
+      setErrorMessage("La suma de las categorías no coincide con el monto total.");
+      return;
+    }
 
     await intentarGuardar({
       comercio: draft.comercio.trim(),
@@ -106,6 +119,10 @@ export default function CaptureButton() {
       fecha: draft.fecha,
       categoria: draft.categoria,
       esRecurrente: draft.esRecurrente,
+      desglose: draft.desglose?.map((f) => ({
+        categoria: f.categoria,
+        monto: Number(f.monto.replace(",", ".")),
+      })),
     });
   }
 
@@ -162,20 +179,20 @@ export default function CaptureButton() {
         aria-hidden="true"
       />
 
-      <div className="relative flex h-[82vw] w-[82vw] max-h-[380px] max-w-[380px] items-center justify-center">
+      <div className="relative flex h-[66vw] w-[66vw] max-h-[316px] max-w-[316px] items-center justify-center">
         <span
           aria-hidden
-          className="animate-ring-pulse absolute h-[78vw] w-[78vw] max-h-[360px] max-w-[360px] rounded-full border border-accent/40"
+          className="animate-ring-pulse absolute h-[63vw] w-[63vw] max-h-[300px] max-w-[300px] rounded-full border border-accent/25"
         />
         <button
           type="button"
           onClick={handlePick}
-          className={`group relative flex h-[62vw] w-[62vw] max-h-[300px] max-w-[300px] flex-col items-center justify-center gap-4 rounded-full bg-accent text-paper shadow-[0_0_0_10px_var(--color-accent-soft),0_30px_60px_-15px_rgba(255,70,32,0.55)] transition-transform duration-150 ease-out active:scale-[0.95] ${
+          className={`group relative flex h-[50vw] w-[50vw] max-h-[240px] max-w-[240px] flex-col items-center justify-center gap-3 rounded-full bg-accent text-paper shadow-[0_0_0_6px_var(--color-accent-soft),0_18px_40px_-16px_rgba(255,70,32,0.35)] transition-transform duration-150 ease-out active:scale-[0.95] ${
             thud ? "animate-stamp-press" : ""
           }`}
         >
-          <CameraGlyph className="h-14 w-14 transition-transform duration-200 group-active:scale-90" />
-          <span className="font-body text-[15px] font-semibold uppercase tracking-[0.14em]">
+          <CameraGlyph className="h-11 w-11 transition-transform duration-200 group-active:scale-90" />
+          <span className="font-body text-[13px] font-semibold uppercase tracking-[0.14em]">
             Registrar gasto
           </span>
         </button>
@@ -188,7 +205,7 @@ export default function CaptureButton() {
         <button
           type="button"
           onClick={handleManualEntry}
-          className="font-mono text-xs uppercase tracking-widest text-paper-dim underline-offset-4 transition-colors hover:text-paper hover:underline"
+          className="rounded-full border border-paper/20 bg-paper/5 px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-paper-dim transition-colors hover:border-paper/35 hover:bg-paper/10 hover:text-paper active:scale-[0.97]"
         >
           Agregar sin foto
         </button>
@@ -293,7 +310,7 @@ export default function CaptureButton() {
                   </button>
                   <button
                     type="submit"
-                    disabled={saving}
+                    disabled={saving || (draft.desglose !== null && !desgloseValido(draft.desglose, draft.monto))}
                     className="flex-1 rounded-full bg-accent py-3.5 font-body text-sm font-semibold text-paper transition-transform active:scale-[0.98] disabled:opacity-60"
                   >
                     {saving ? "Guardando…" : "Guardar gasto"}

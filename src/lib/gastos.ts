@@ -1,5 +1,10 @@
 import type { Categoria } from "./receipt";
 
+export type FilaCategoria = {
+  categoria: Categoria;
+  monto: number;
+};
+
 export type Gasto = {
   id: number;
   comercio: string;
@@ -8,6 +13,7 @@ export type Gasto = {
   categoria: Categoria;
   esRecurrente: boolean;
   registradoEn: string;
+  desglose: FilaCategoria[];
 };
 
 export type NuevoGasto = {
@@ -16,6 +22,12 @@ export type NuevoGasto = {
   fecha: string;
   categoria: Categoria;
   esRecurrente: boolean;
+  desglose?: FilaCategoria[];
+};
+
+export type FilaCategoriaDraft = {
+  categoria: Categoria;
+  monto: string;
 };
 
 export type DraftGasto = {
@@ -24,7 +36,26 @@ export type DraftGasto = {
   fecha: string;
   categoria: Categoria;
   esRecurrente: boolean;
+  /** null = categoría única (como antes); array = dividido en varias categorías. */
+  desglose: FilaCategoriaDraft[] | null;
 };
+
+/** La categoría con mayor monto dentro de un desglose — se usa como `categoria` del gasto para listas/filtros simples. */
+export function categoriaPrincipal(desglose: FilaCategoria[]): Categoria {
+  return desglose.reduce((mayor, fila) => (fila.monto > mayor.monto ? fila : mayor)).categoria;
+}
+
+/** monto total menos lo ya asignado en las filas del desglose (positivo = falta asignar, negativo = sobra). */
+export function restanteDesglose(desglose: FilaCategoriaDraft[], montoTotal: string): number {
+  const total = Number(montoTotal.replace(",", ".")) || 0;
+  const asignado = desglose.reduce((sum, fila) => sum + (Number(fila.monto.replace(",", ".")) || 0), 0);
+  return total - asignado;
+}
+
+/** Un desglose es válido para guardar si tiene filas y su suma coincide (±1 centavo) con el monto total. */
+export function desgloseValido(desglose: FilaCategoriaDraft[], montoTotal: string): boolean {
+  return desglose.length > 0 && Math.abs(restanteDesglose(desglose, montoTotal)) < 0.01;
+}
 
 export class GastoDuplicadoError extends Error {
   parecido: Gasto;

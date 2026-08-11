@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function HistorialPage() {
   const registros = await prisma.gasto.findMany({
     orderBy: [{ fecha: "desc" }, { registradoEn: "desc" }],
+    include: { desglose: true },
   });
 
   const gastos: Gasto[] = registros.map((g) => ({
@@ -21,6 +22,7 @@ export default async function HistorialPage() {
     categoria: g.categoria as Categoria,
     esRecurrente: g.esRecurrente,
     registradoEn: g.registradoEn.toISOString(),
+    desglose: g.desglose.map((f) => ({ categoria: f.categoria as Categoria, monto: f.monto })),
   }));
 
   return (

@@ -12,6 +12,8 @@ const ALLOWED_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "i
 
 const EXTRACTION_PROMPT = (today: string) => `Extraés datos de gastos a partir de la foto de un recibo o ticket de compra. Hoy es ${today}; usá esa fecha si el recibo no muestra una fecha legible. El monto debe ser el total final pagado, como número sin símbolo de moneda ni separadores de miles.
 
+Importante sobre el formato de los números: estos son recibos colombianos, donde la coma y el punto se usan como separador de MILES, no de decimales. "15,500", "15.500" y "15500" representan el mismo valor: quince mil quinientos. Interpretá el monto como 15500 en los tres casos — no lo dividas por 1000 ni lo trates como si tuviera decimales.
+
 Respondé únicamente con un objeto JSON con exactamente estos campos:
 - "comercio": string, nombre del comercio o establecimiento tal como aparece en el recibo.
 - "monto": number, monto total pagado (sin símbolo de moneda).

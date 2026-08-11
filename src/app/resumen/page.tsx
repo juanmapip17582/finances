@@ -20,37 +20,47 @@ export default async function ResumenPage({ searchParams }: { searchParams: Sear
 
   const periodo = calcularPeriodo(rango, offset);
 
-  const [actuales, anteriorAgg, porRecurrencia] = await Promise.all([
-    prisma.gasto.groupBy({
-      by: ["categoria"],
+  const [gastosDelPeriodo, anteriorAgg] = await Promise.all([
+    prisma.gasto.findMany({
       where: { fecha: { gte: periodo.inicioKey, lte: periodo.finKey } },
-      _sum: { monto: true },
+      include: { desglose: true },
     }),
     prisma.gasto.aggregate({
       _sum: { monto: true },
       where: { fecha: { gte: periodo.inicioAnteriorKey, lte: periodo.finAnteriorKey } },
     }),
-    prisma.gasto.groupBy({
-      by: ["esRecurrente"],
-      where: { fecha: { gte: periodo.inicioKey, lte: periodo.finKey } },
-      _sum: { monto: true },
-    }),
   ]);
 
-  const desglose = actuales
-    .map((row) => ({
-      categoria: row.categoria as Categoria,
-      monto: row._sum.monto ?? 0,
-    }))
+  // Un gasto dividido en varias categorías aporta cada fila a SU categoría (no todo a
+  // la principal); uno sin dividir aporta su monto entero a su única categoría.
+  const totalesPorCategoria = new Map<Categoria, number>();
+  let totalFijo = 0;
+  let totalVariable = 0;
+
+  for (const gasto of gastosDelPeriodo) {
+    if (gasto.esRecurrente) totalFijo += gasto.monto;
+    else totalVariable += gasto.monto;
+
+    if (gasto.desglose.length > 0) {
+      for (const fila of gasto.desglose) {
+        const cat = fila.categoria as Categoria;
+        totalesPorCategoria.set(cat, (totalesPorCategoria.get(cat) ?? 0) + fila.monto);
+      }
+    } else {
+      const cat = gasto.categoria as Categoria;
+      totalesPorCategoria.set(cat, (totalesPorCategoria.get(cat) ?? 0) + gasto.monto);
+    }
+  }
+
+  const desglose = [...totalesPorCategoria.entries()]
+    .map(([categoria, monto]) => ({ categoria, monto }))
     .sort((a, b) => b.monto - a.monto);
 
-  const total = desglose.reduce((sum, item) => sum + item.monto, 0);
+  const total = gastosDelPeriodo.reduce((sum, g) => sum + g.monto, 0);
   const totalAnterior = anteriorAgg._sum.monto ?? 0;
   const maxMonto = desglose[0]?.monto ?? 0;
   const topCategoria = desglose[0];
 
-  const totalFijo = porRecurrencia.find((r) => r.esRecurrente)?._sum.monto ?? 0;
-  const totalVariable = porRecurrencia.find((r) => !r.esRecurrente)?._sum.monto ?? 0;
   const shareFijo = total > 0 ? (totalFijo / total) * 100 : 0;
   const shareVariable = total > 0 ? (totalVariable / total) * 100 : 0;
 

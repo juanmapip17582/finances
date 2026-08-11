@@ -6,6 +6,7 @@ import {
   etiquetaDia,
   actualizarGasto,
   eliminarGasto,
+  desgloseValido,
   type Gasto,
   type DraftGasto,
 } from "@/lib/gastos";
@@ -21,7 +22,15 @@ function draftDeGasto(gasto: Gasto): DraftGasto {
     fecha: gasto.fecha,
     categoria: gasto.categoria,
     esRecurrente: gasto.esRecurrente,
+    desglose:
+      gasto.desglose.length > 0
+        ? gasto.desglose.map((f) => ({ categoria: f.categoria, monto: String(f.monto) }))
+        : null,
   };
+}
+
+function categoriasDelGasto(gasto: Gasto): Categoria[] {
+  return gasto.desglose.length > 0 ? gasto.desglose.map((f) => f.categoria) : [gasto.categoria];
 }
 
 export default function HistorialExplorer({ gastos: gastosIniciales }: { gastos: Gasto[] }) {
@@ -43,7 +52,7 @@ export default function HistorialExplorer({ gastos: gastosIniciales }: { gastos:
     const q = texto.trim().toLowerCase();
     return gastos.filter((g) => {
       if (q && !g.comercio.toLowerCase().includes(q)) return false;
-      if (categoria !== "todas" && g.categoria !== categoria) return false;
+      if (categoria !== "todas" && !categoriasDelGasto(g).includes(categoria)) return false;
       if (desde && g.fecha < desde) return false;
       if (hasta && g.fecha > hasta) return false;
       return true;
@@ -82,6 +91,10 @@ export default function HistorialExplorer({ gastos: gastosIniciales }: { gastos:
       setErrorAccion("Revisá el comercio y el monto antes de guardar.");
       return;
     }
+    if (draftEdicion.desglose && !desgloseValido(draftEdicion.desglose, draftEdicion.monto)) {
+      setErrorAccion("La suma de las categorías no coincide con el monto total.");
+      return;
+    }
 
     setGuardandoEdicion(true);
     setErrorAccion(null);
@@ -92,6 +105,10 @@ export default function HistorialExplorer({ gastos: gastosIniciales }: { gastos:
         fecha: draftEdicion.fecha,
         categoria: draftEdicion.categoria,
         esRecurrente: draftEdicion.esRecurrente,
+        desglose: draftEdicion.desglose?.map((f) => ({
+          categoria: f.categoria,
+          monto: Number(f.monto.replace(",", ".")),
+        })),
       });
       setGastos((prev) => prev.map((g) => (g.id === actualizado.id ? actualizado : g)));
       cerrarEdicion();
@@ -217,7 +234,7 @@ export default function HistorialExplorer({ gastos: gastosIniciales }: { gastos:
                     <div className="min-w-0">
                       <p className="truncate font-body text-sm text-paper">{gasto.comercio}</p>
                       <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-paper-dim">
-                        {CATEGORIA_LABEL[gasto.categoria]}
+                        {gasto.desglose.length > 0 ? "Varias categorías" : CATEGORIA_LABEL[gasto.categoria]}
                         {gasto.esRecurrente ? " · Recurrente" : ""}
                       </p>
                     </div>
@@ -301,7 +318,11 @@ export default function HistorialExplorer({ gastos: gastosIniciales }: { gastos:
                 </button>
                 <button
                   type="submit"
-                  disabled={guardandoEdicion}
+                  disabled={
+                    guardandoEdicion ||
+                    (draftEdicion.desglose !== null &&
+                      !desgloseValido(draftEdicion.desglose, draftEdicion.monto))
+                  }
                   className="flex-1 rounded-full bg-accent py-3.5 font-body text-sm font-semibold text-paper transition-transform active:scale-[0.98] disabled:opacity-60"
                 >
                   {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
